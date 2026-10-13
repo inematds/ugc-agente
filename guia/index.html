@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UGC com agente — vídeo promocional feito por um agente de IA</title>
+<meta name="description" content="Caso real: como um agente de IA fez um vídeo UGC de 15 s do INEMA.CLUB com Kling pela assinatura, lipsync pelo site, voz ElevenLabs e montagem em ffmpeg. Ideia, dicas, problemas e comandos.">
+<link rel="alternate" hreflang="pt-BR" href="https://inematds.github.io/ugc-agente/guia/">
+<link rel="alternate" hreflang="en" href="https://inematds.github.io/ugc-agente/guia/en/">
+<link rel="alternate" hreflang="es" href="https://inematds.github.io/ugc-agente/guia/es/">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0c0c10; --bg2:#14141b; --card:#16161e; --line:#272730;
+    --txt:#e9e9ee; --mut:#9a9aa6; --amb:#E2A23B; --amb2:#f0c070; --sky:#38bdf8; --pro:#cbd5e1;
+    color-scheme:dark;
+  }
+  body.light{
+    --bg:#f6f7f9; --bg2:#eceef2; --card:#ffffff; --line:#e1e3ea;
+    --txt:#1a1a22; --mut:#5b5b68; --amb:#b9791d; --amb2:#a16207; --sky:#0369a1; --pro:#b45309;
+    color-scheme:light;
+  }
+  body.light .hero .glow{opacity:.5}
+  body.light pre{background:#0e0e14;color:#d6d6e0}
+  body.light pre .c{color:#8a8a98}
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--txt);font:16px/1.65 Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  h1,h2,h3{font-family:Sora,sans-serif;line-height:1.15;margin:0}
+  a{color:var(--amb);text-decoration:none}
+  code,pre{font-family:"JetBrains Mono",monospace}
+  .wrap{max-width:1160px;margin:0 auto;padding:0 22px}
+  .mut{color:var(--mut)} .amb{color:var(--amb)}
+  .chip{display:inline-block;font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--amb);font-weight:600;font-family:Sora}
+  nav{position:sticky;top:0;z-index:30;backdrop-filter:blur(12px);background:rgba(12,12,16,.78);border-bottom:1px solid var(--line)}
+  nav .wrap{display:flex;align-items:center;gap:22px;height:60px}
+  nav .brand{display:flex;align-items:center;gap:8px;font-family:Sora;font-weight:800;letter-spacing:-.02em;color:var(--amb)}
+  nav .brand .emoji{font-size:1.25rem}
+  nav .sep{color:var(--mut);opacity:.45}
+  nav .inema{color:var(--sky);font-weight:600;font-size:.88rem;font-family:Sora}
+  nav .inema:hover{filter:brightness(1.15)}
+  nav .pro{color:var(--pro);font-weight:600;font-size:.88rem;font-family:Sora}
+  nav .pro:hover{filter:brightness(1.15)}
+  nav .clubpro{display:inline-flex;align-items:center;gap:6px}
+  nav .links{margin-left:auto;display:flex;align-items:center;gap:20px;font-size:.92rem}
+  nav .links a.sec{color:var(--mut)} nav .links a.sec:hover{color:var(--txt)}
+  .lang{display:inline-flex;gap:2px;font-family:Sora;font-size:.78rem}
+  .lang a{color:var(--mut);padding:.2em .45em;border-radius:6px} .lang a.on{color:var(--amb);background:rgba(226,162,59,.12)}
+  .tgl{background:var(--bg2);border:1px solid var(--line);color:var(--txt);width:38px;height:38px;border-radius:10px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:1.05rem}
+  .tgl:hover{border-color:var(--amb)}
+  .btn{display:inline-block;background:var(--amb);color:#1a1206;font-weight:600;padding:.6em 1.05em;border-radius:10px;font-family:Sora}
+  .btn.ghost{background:transparent;color:var(--txt);border:1px solid var(--line)}
+  @media(max-width:760px){nav .links a.sec{display:none}}
+  @media(max-width:520px){nav .wrap{gap:8px;padding:8px 14px;height:auto;flex-wrap:wrap} nav .links{gap:8px;margin-left:0;width:100%;justify-content:space-between} nav .btn{padding:.45em .7em;font-size:.82rem} .tgl{width:34px;height:34px}}
+  .hero{position:relative;overflow:hidden;border-bottom:1px solid var(--line)}
+  .hero .glow{position:absolute;inset:-40% -20% auto auto;width:70%;height:600px;background:radial-gradient(closest-side,rgba(226,162,59,.22),transparent 70%);pointer-events:none}
+  .hero .wrap{display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:center;padding:74px 22px}
+  .hero h1{font-size:clamp(2.2rem,5vw,3.5rem);font-weight:800;letter-spacing:-.025em}
+  .hero p.lead{font-size:1.18rem;color:var(--mut);margin:1.1em 0 1.6em;max-width:34ch}
+  .hero .cta{display:flex;gap:12px;flex-wrap:wrap}
+  .hero figure{margin:0;border-radius:16px;overflow:hidden;border:1px solid var(--line);box-shadow:0 30px 80px -30px #000}
+  .hero figure img{width:100%;display:block}
+  .resumo{padding:38px 0 34px;border-bottom:1px solid var(--line)}
+  .resumo p{font-size:1.12rem;line-height:1.7;max-width:74ch;margin:.55em 0 0}
+  @media(max-width:780px){.hero .wrap{grid-template-columns:1fr;padding:48px 22px}}
+  section{padding:62px 0;border-bottom:1px solid var(--line)}
+  section h2{font-size:clamp(1.5rem,3.4vw,2.1rem);font-weight:800;letter-spacing:-.02em}
+  section .sub{color:var(--mut);margin:.6em 0 2em;max-width:62ch}
+  .grid{display:grid;gap:16px}
+  .g3{grid-template-columns:repeat(3,1fr)} .g4{grid-template-columns:repeat(4,1fr)} .g2{grid-template-columns:repeat(2,1fr)}
+  @media(max-width:820px){.g3,.g4{grid-template-columns:1fr 1fr}}
+  @media(max-width:540px){.g2,.g3,.g4{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px}
+  .card h3{font-size:1.05rem;margin-bottom:.4em}
+  .card p{color:var(--mut);font-size:.92rem;margin:0}
+  .num{display:inline-flex;width:30px;height:30px;align-items:center;justify-content:center;border-radius:8px;background:rgba(226,162,59,.14);color:var(--amb);font-family:Sora;font-weight:800;font-size:.9rem;margin-bottom:.7em}
+  .flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px}
+  .flow span{background:var(--bg2);border:1px solid var(--line);border-radius:999px;padding:.45em .9em;font-size:.85rem;font-family:Sora;font-weight:600}
+  .flow .arr{color:var(--amb);border:none;background:none;padding:0 .1em}
+  pre{background:#0a0a0e;border:1px solid var(--line);border-radius:12px;padding:16px 18px;overflow:auto;font-size:.86rem;line-height:1.6;color:#d6d6e0}
+  pre .c{color:#6f6f7c} pre .k{color:var(--amb2)} pre .s{color:#9ece6a}
+  .step{display:grid;grid-template-columns:46px minmax(0,1fr);gap:16px;margin-bottom:26px}
+  .step>div,.card{min-width:0}
+  p code,li code,td code{overflow-wrap:anywhere}
+  .step .b{width:46px;height:46px;border-radius:12px;background:var(--amb);color:#1a1206;font-family:Sora;font-weight:800;font-size:1.25rem;display:flex;align-items:center;justify-content:center}
+  .step h3{font-size:1.12rem;margin-bottom:.3em}
+  .step p{color:var(--mut);margin:.2em 0 .7em}
+  .ex{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:680px){.ex{grid-template-columns:1fr}}
+  .ex figure{margin:0;border-radius:14px;overflow:hidden;border:1px solid var(--line)}
+  .ex figure img{width:100%;display:block}
+  .ex figcaption{padding:12px 14px;font-size:.88rem;color:var(--mut);background:var(--card)}
+  .phase{display:flex;gap:14px;padding:16px 0;border-bottom:1px solid var(--line)}
+  .phase:last-child{border:none}
+  .phase .tag{flex:0 0 92px;font-family:Sora;font-weight:800;color:var(--amb)}
+  .phase .d strong{display:block;margin-bottom:.2em}
+  .phase .d span{color:var(--mut);font-size:.92rem}
+  footer{padding:46px 0;text-align:center;color:var(--mut);font-size:.9rem}
+  .pill{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:.3em .8em;font-size:.78rem;color:var(--mut);margin:0 4px}
+  .vids figure video{width:100%;display:block;max-height:640px;background:#000;aspect-ratio:9/16;object-fit:contain}
+  .prob{display:grid;gap:10px}
+  .pr{display:grid;grid-template-columns:230px minmax(0,1fr);gap:16px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 18px}
+  .pr b{font-family:Sora;color:var(--amb)} .pr span{color:var(--mut);font-size:.94rem} .pr em{color:var(--txt);font-style:normal;font-weight:600}
+  @media(max-width:640px){.pr{grid-template-columns:1fr;gap:4px}}
+  @media(max-width:1060px){nav .links a.sec{display:none}}
+</style>
+</head>
+<body>
+
+<nav><div class="wrap">
+  <a class="brand" href="#top"><span class="emoji">🎬</span> UGC com agente</a>
+  <span class="sep">|</span>
+  <span class="clubpro">
+    <a class="inema" href="https://inema.club" target="_blank" rel="noopener">INEMA.CLUB</a>
+    <span class="sep">-</span>
+    <a class="pro" href="https://inema.pro" target="_blank" rel="noopener">PRO</a>
+  </span>
+  <div class="links">
+    <a class="sec" href="#oque">A ideia</a>
+    <a class="sec" href="#fluxo">Como fizemos</a>
+    <a class="sec" href="#dicas">Dicas</a>
+    <a class="sec" href="#problemas">Problemas</a>
+    <a class="sec" href="#guia">Guia</a>
+    <span class="lang"><a class="on" href="./">PT</a><a href="en/">EN</a><a href="es/">ES</a></span>
+    <button class="tgl" id="themeToggle" aria-label="Alternar tema" title="Alternar tema">🌙</button>
+    <a class="btn" href="https://github.com/inematds/ugc-agente" target="_blank" rel="noopener">GitHub</a>
+  </div>
+</div></nav>
+
+<header class="hero" id="top">
+  <div class="glow"></div>
+  <div class="wrap">
+    <div>
+      <span class="chip">Caso real · promo do INEMA.CLUB em 15 s</span>
+      <h1>Vídeo UGC feito do começo ao fim por um <span class="amb">agente</span></h1>
+      <p class="lead">Uma arte de referência virou um Short com cenas do Kling, voz do ElevenLabs, lipsync e publicação, sem ninguém abrir editor de vídeo.</p>
+      <div class="cta">
+        <a class="btn" href="#guia">Começar o guia</a>
+        <a class="btn ghost" href="#exemplos">Ver o vídeo</a>
+      </div>
+    </div>
+    <figure><img src="assets/banner.jpg" alt="Banner: vídeo UGC com agente"></figure>
+  </div>
+</header>
+
+<section id="resumo" class="resumo"><div class="wrap">
+  <span class="chip">Em resumo</span>
+  <p>Este projeto conta como um agente de IA (o Claude Code) produziu um vídeo promocional de 15 segundos do INEMA.CLUB no estilo UGC, aquele vídeo "de gente real falando com a câmera" das redes sociais. Serve para quem cria conteúdo e quer delegar a produção a um agente. Mostra a ideia, os passos com os comandos usados, as dicas que fizeram diferença e os problemas que apareceram no caminho. Para repetir, você precisa de assinatura do Kling AI, uma conta ElevenLabs, ffmpeg, Python e um navegador logado no Kling.</p>
+</div></section>
+
+<section id="oque"><div class="wrap">
+  <span class="chip">A ideia</span>
+  <h2>Uma arte, um pedido e o agente faz o resto</h2>
+  <p class="sub">O pedido foi uma frase: "quero um vídeo promocional do INEMA de 15 segundos, use o Kling para mostrar o que temos no inema.club usando esta imagem como referência, e depois uma voz do ElevenLabs em português". O agente planejou, mostrou o custo, esperou o ok e produziu.</p>
+  <figure style="margin:0 0 26px;border-radius:16px;overflow:hidden;border:1px solid var(--line);box-shadow:0 30px 80px -30px #000"><img src="assets/banner-grade.jpg" alt="As seis etapas: ideia, Kling pela assinatura, lipsync no site, voz ElevenLabs, montagem e publicação" loading="lazy" style="width:100%;display:block"></figure>
+  <div class="grid g3">
+    <div class="card"><h3>💳 Assinatura, não API</h3><p>O vídeo saiu da assinatura Pro do Kling, pela CLI oficial. Custo: 120 créditos pelas cenas e 10 pelo lipsync, de um saldo de 7.936.</p></div>
+    <div class="card"><h3>🌐 O agente também usa o site</h3><p>O Lip Sync do Kling só existe no site. O agente abriu um navegador já logado, enviou as cenas e baixou o resultado sozinho.</p></div>
+    <div class="card"><h3>🔎 Conferido antes de entregar</h3><p>Cada etapa foi checada: transcrição da voz, folha de quadros do vídeo, quadro 0 com o gancho e duração de 15 s exatos.</p></div>
+  </div>
+  <div class="ex" style="margin-top:22px">
+    <figure><img src="assets/referencia.jpg" alt="Arte de referência: moça segurando celular com o app INEMA.CLUB" loading="lazy"><figcaption>A arte de referência que o Nei mandou. A moça, o cenário e a tela do celular viraram o vídeo.</figcaption></figure>
+    <div class="card"><h3>O que o agente decidiu sozinho</h3><p>
+      • Formato 9:16, depois de perguntar (Reels e Shorts).<br>
+      • Pedir ao Kling cenas <b>sem texto</b>, porque ele deforma letras, e pôr os textos por cima, nítidos.<br>
+      • Roteiro curto, com o ganho na primeira frase: "Aprenda inteligência artificial na prática, de graça".<br>
+      • Voz feminina brasileira do catálogo do ElevenLabs (Amanda Kelly).<br>
+      • Trilha local, sem direito autoral de terceiros.<br><br>
+      <b>O que precisou de ok:</b> gastar créditos, usar a API do ElevenLabs e publicar no YouTube.</p></div>
+  </div>
+</div></section>
+
+<section id="fluxo"><div class="wrap">
+  <span class="chip">Como fizemos</span>
+  <h2>Da imagem ao Short publicado</h2>
+  <p class="sub">Oito etapas. Só a primeira e a de publicação precisaram de uma pessoa: para dizer o formato e dar o ok.</p>
+  <div class="flow">
+    <span>Arte de referência</span><span class="arr">→</span>
+    <span>Plano + custo (ok)</span><span class="arr">→</span>
+    <span>Kling: 3 cenas, 15 s</span><span class="arr">→</span>
+    <span>Voz ElevenLabs</span><span class="arr">→</span>
+    <span>Textos por cima</span><span class="arr">→</span>
+    <span>Lip Sync no site</span><span class="arr">→</span>
+    <span>Montagem ffmpeg</span><span class="arr">→</span>
+    <span>Bot + YouTube</span>
+  </div>
+  <div class="grid g4" style="margin-top:26px">
+    <div class="card"><div class="num">1</div><h3>Cenas</h3><p><code>kling omni_ref_video</code> com a arte como referência: 15 s, 9:16, 1080p, sem áudio, três tomadas. Uma chamada.</p></div>
+    <div class="card"><div class="num">2</div><h3>Voz</h3><p>ElevenLabs <code>eleven_multilingual_v2</code>, velocidade 1,12, 13,3 s. Conferida pelo Whisper local.</p></div>
+    <div class="card"><div class="num">3</div><h3>Textos</h3><p>Python + Pillow desenham 450 quadros PNG, cada texto entrando na palavra falada.</p></div>
+    <div class="card"><div class="num">4</div><h3>Lipsync e final</h3><p>Cenas de frente passam pelo Lip Sync do site; o ffmpeg junta tudo, tira a marca d'água e nivela o som.</p></div>
+  </div>
+</div></section>
+
+<section id="dicas"><div class="wrap">
+  <span class="chip">Dicas</span>
+  <h2>O que fez diferença</h2>
+  <p class="sub">A principal: use a sua assinatura e dê ao agente a capacidade de operar o site quando a ferramenta não tem CLI.</p>
+  <div class="grid g2">
+    <div class="card"><h3>💳 1. Assinatura primeiro</h3><p>O Kling tem CLI oficial (<code>kling</code>) que usa os créditos do seu plano. Sem chave de API, sem cobrança separada. O agente roda <code>kling account</code> antes e depois para medir o custo real.</p></div>
+    <div class="card"><h3>🌐 2. Agente que usa a web</h3><p>Lip Sync, avatar e outras funções só existem no site. Um Chromium com o seu login, aberto com <code>--remote-debugging-port</code>, deixa o agente enviar arquivos e clicar pelo Playwright.</p></div>
+    <div class="card"><h3>🔤 3. Nada de texto na geração</h3><p>Gerador de vídeo deforma letras. Peça "no text, no letters, no logos" e escreva os textos depois, por cima.</p></div>
+    <div class="card"><h3>📐 4. Formato pelo modelo certo</h3><p>No <code>image_to_video</code> o vídeo herda o formato da imagem (1:1). Para 9:16 a partir de uma arte quadrada, use <code>omni_ref_video</code> com <code>--aspect_ratio 9:16</code>.</p></div>
+    <div class="card"><h3>⏱️ 5. Voz cabe no tempo</h3><p>15 s comportam cerca de 30 palavras. Enxugue o texto e use a velocidade nativa da voz (1,1 a 1,15), em vez de acelerar o áudio depois.</p></div>
+    <div class="card"><h3>💰 6. Lipsync cobra em blocos de 5 s</h3><p>Uma cena de 5,08 s custa 10 créditos; cortada em 5,0 s, custa 5.</p></div>
+    <div class="card"><h3>🎯 7. Gancho no quadro 0</h3><p>O primeiro quadro já mostra a promessa ("Aprenda IA na prática", "Acesso grátis"). Quem rola o feed decide ali.</p></div>
+    <div class="card"><h3>🧾 8. Salve cada resposta</h3><p>Grave o retorno de cada envio (o <code>generationId</code>) em arquivo antes de seguir. Trabalho pago perdido não volta.</p></div>
+  </div>
+</div></section>
+
+<section id="problemas"><div class="wrap">
+  <span class="chip">Problemas</span>
+  <h2>O que deu errado e como resolvemos</h2>
+  <p class="sub">Tudo isto aconteceu de verdade nesta produção. Cada linha diz o problema e a menor correção que resolveu.</p>
+  <div class="prob">
+    <div class="pr"><b>Lipsync esquecido</b><span>A primeira versão saiu com locução em off: o agente decidiu sozinho que a moça não falaria. <em>Correção:</em> perguntar logo no plano se a pessoa do vídeo fala.</span></div>
+    <div class="pr"><b>CLI do Kling não aceita áudio</b><span>Sem lipsync pela linha de comando. <em>Correção:</em> Lip Sync pelo site, no navegador logado, com dois scripts Playwright.</span></div>
+    <div class="pr"><b>"Sem confirmação" que tinha entrado</b><span>A tela não mostrou o aviso de envio da cena 1, mas o pedido estava na fila. <em>Correção:</em> conferir o histórico antes de reenviar, para não pagar duas vezes.</span></div>
+    <div class="pr"><b>Download de trabalhos antigos</b><span>O script de download baixou 12 vídeos de outro projeto com o mesmo padrão de nome. <em>Correção:</em> baixar só os números pedidos.</span></div>
+    <div class="pr"><b>Marca d'água "KlingAI"</b><span>Aparece no canto inferior direito das cenas e do lipsync. <em>Correção:</em> zoom de 6% no ffmpeg (<code>crop=1012:1800:34:0</code>).</span></div>
+    <div class="pr"><b>ElevenLabs recusou o formato</b><span>Erro 403: <code>mp3_44100_192</code> só no plano Creator. <em>Correção:</em> <code>mp3_44100_128</code>.</span></div>
+    <div class="pr"><b>Arquivo de áudio vazio</b><span>O script abria o arquivo antes de a API responder; com o erro, sobrou um mp3 vazio. <em>Correção:</em> ler a resposta primeiro, gravar depois.</span></div>
+    <div class="pr"><b>Narração longa demais</b><span>16,6 s para um vídeo de 15 s. <em>Correção:</em> texto mais curto e velocidade 1,12 na própria voz: 13,3 s.</span></div>
+    <div class="pr"><b>Quadro 0 vazio</b><span>Os textos entravam com fade e o primeiro quadro saía limpo. <em>Correção:</em> o gancho já aparece cheio no quadro 0.</span></div>
+    <div class="pr"><b>Texto azul sumindo</b><span>"mais liberdade" em azul quase não se via sobre o fundo claro. <em>Correção:</em> caixa escura atrás da frase.</span></div>
+    <div class="pr"><b>Folha de quadros embaralhada</b><span>O glob ordena nomes como texto (0.5, 11, 13, 3…) e a conferência visual ficou fora de ordem. <em>Correção:</em> numerar os quadros (k1, k2, k3…).</span></div>
+  </div>
+</div></section>
+
+<section id="pre"><div class="wrap">
+  <span class="chip">Pré-requisitos</span>
+  <h2>O que precisa ter</h2>
+  <p class="sub">Tudo roda na sua máquina. O agente usado foi o Claude Code, mas os scripts são comuns e funcionam à mão.</p>
+  <div class="grid g3">
+    <div class="card"><h3>Kling AI (assinatura)</h3><p>Plano pago e a CLI oficial, logada.</p><pre><span class="k">npm</span> i -g @klingai/cli-global
+<span class="k">kling</span> login
+<span class="k">kling</span> account</pre></div>
+    <div class="card"><h3>ElevenLabs</h3><p>Conta com chave de API para a narração.</p><pre><span class="k">export</span> ELEVENLABS_API_KEY=...</pre></div>
+    <div class="card"><h3>Navegador logado</h3><p>Chromium com o seu login do Kling e porta de depuração; Playwright só como biblioteca.</p><pre><span class="k">chromium</span> --user-data-dir=~/perfil-kling \
+  --remote-debugging-port=9333
+<span class="k">npm</span> i playwright</pre></div>
+    <div class="card"><h3>ffmpeg + Python</h3><p>Montagem, cortes e camada de textos.</p><pre><span class="k">sudo</span> apt install ffmpeg
+<span class="k">pip</span> install pillow</pre></div>
+    <div class="card"><h3>Fonte Montserrat</h3><p>Black e ExtraBold em <code>~/.local/share/fonts/</code> (usadas pelo <code>overlay.py</code>).</p></div>
+    <div class="card"><h3>Música</h3><p>Uma trilha sua ou livre, em WAV. No promo foi uma trilha gerada localmente.</p></div>
+  </div>
+</div></section>
+
+<section id="guia"><div class="wrap">
+  <span class="chip">Guia de uso · passo a passo</span>
+  <h2>Repetindo a produção</h2>
+  <p class="sub">Os comandos abaixo são os que rodaram no promo do INEMA. Troque a arte, o texto e a voz pelos seus.</p>
+
+  <div class="step"><div class="b">1</div><div>
+    <h3>Gere as cenas no Kling</h3>
+    <p>Arte como referência, três tomadas, sem texto. Guarde a resposta: ela tem o <code>generationId</code>.</p>
+<pre><span class="k">kling</span> omni_ref_video --model kling-video-v3_0_omni --image ./ref.png \
+  --duration 15 --aspect_ratio 9:16 --resolution 1080p \
+  --prefer_multi_shots true --enable_audio false \
+  <span class="s">"A warm 15-second commercial in three shots, featuring the young woman from &lt;&lt;&lt;image_1&gt;&gt;&gt;.
+   Shot 1: she smiles and points at a smartphone. Shot 2: over-the-shoulder, she types on a laptop
+   with abstract dashboards. Shot 3: she laughs and waves. No text, no letters, no logos."</span> &gt; submit.json
+<span class="k">kling</span> query_tasks &lt;generationId&gt;   <span class="c"># repetir até COMPLETED; baixar works[].url na hora (expira em 24 h)</span></pre>
+  </div></div>
+
+  <div class="step"><div class="b">2</div><div>
+    <h3>Grave a narração</h3>
+    <p>Cerca de 30 palavras, com o ganho na primeira frase. Confira a duração e a pronúncia.</p>
+<pre><span class="k">python3</span> scripts/tts_elevenlabs.py oi8rgjIfLgJRsQ6rbZh3 vo.mp3 \
+  <span class="s">"Aprenda inteligência artificial na prática, de graça! No Inema Clube tem cursos de IA,
+   agentes, automação e comunidade. Mais conhecimento, mais liberdade. Acesse: inema ponto clube."</span> 1.12
+<span class="k">ffprobe</span> -v error -show_entries format=duration -of csv=p=0 vo.mp3   <span class="c"># 13.27</span></pre>
+  </div></div>
+
+  <div class="step"><div class="b">3</div><div>
+    <h3>Ache os cortes das cenas</h3>
+    <p>Os tempos de troca de tomada viram <code>C1</code> e <code>C2</code> no script de montagem.</p>
+<pre><span class="k">ffmpeg</span> -i kling.mp4 -vf <span class="s">"select='gt(scene,0.25)',showinfo"</span> -f null - 2&gt;&amp;1 | grep -o <span class="s">"pts_time:[0-9.]*"</span>
+<span class="c"># pts_time:4.625  pts_time:9.91667</span></pre>
+  </div></div>
+
+  <div class="step"><div class="b">4</div><div>
+    <h3>Prepare os trechos e faça o Lip Sync no site</h3>
+    <p>O <code>montar.sh</code> corta as cenas de frente e o trecho da fala de cada uma. Com o navegador logado aberto na porta 9333, os scripts enviam e baixam.</p>
+<pre>C1=4.625 C2=9.917 <span class="k">bash</span> scripts/montar.sh          <span class="c"># 1ª vez: gera ls/v91, v93, a91, a93</span>
+<span class="k">node</span> scripts/kling_lipsync_enviar.mjs $PWD/ls 91:5 93:5   <span class="c"># confere o custo no botão antes de clicar</span>
+<span class="k">node</span> scripts/kling_lipsync_baixar.mjs $PWD/ls 91 93      <span class="c"># 3 a 5 min depois: ls/ks91.mp4, ls/ks93.mp4</span></pre>
+  </div></div>
+
+  <div class="step"><div class="b">5</div><div>
+    <h3>Monte o vídeo final</h3>
+    <p>Rodando de novo, o script troca as cenas pelas versões com lipsync, desenha os textos e mistura voz e música em −14 LUFS.</p>
+<pre>C1=4.625 C2=9.917 <span class="k">bash</span> scripts/montar.sh   <span class="c"># → promo-9x16.mp4, 15.000000 s</span></pre>
+  </div></div>
+
+  <div class="step"><div class="b">6</div><div>
+    <h3>Confira antes de publicar</h3>
+    <p>Uma folha de quadros mostra se o gancho está no quadro 0 e se os textos aparecem.</p>
+<pre><span class="k">mkdir</span> -p cs; i=0; for t in 0 1.5 4.8 7.4 9 11.5 14.5; do i=$((i+1))
+  <span class="k">ffmpeg</span> -v error -y -ss $t -i promo-9x16.mp4 -frames:v 1 -vf scale=270:-1 cs/f$i.jpg; done
+<span class="k">ffmpeg</span> -y -i cs/f%d.jpg -vf tile=7x1 folha.jpg</pre>
+  </div></div>
+
+  <div class="step"><div class="b">7</div><div>
+    <h3>Publique</h3>
+    <p>No INEMA o Short foi para o canal INEMA FTD pelo <a href="https://github.com/inematds/yt-pubx" target="_blank" rel="noopener">yt-pubx</a>, que escreve título e descrição; Short não leva thumb.</p>
+<pre>./yt-pubx publicar promo-9x16.mp4 --canal lives3 --sem-thumb --contexto <span class="s">"..."</span> --dry-run
+./yt-pubx publicar promo-9x16.mp4 --canal lives3 --sem-thumb --plano &lt;pasta&gt;/plano.json</pre>
+  </div></div>
+</div></section>
+
+<section id="exemplos"><div class="wrap">
+  <span class="chip">Exemplos</span>
+  <h2>O resultado</h2>
+  <p class="sub">Duas versões do mesmo promo: a primeira com locução em off e a segunda com a moça falando nas cenas 1 e 3.</p>
+  <div class="ex vids">
+    <figure><video src="assets/promo-off.mp4" poster="assets/poster.jpg" controls playsinline preload="none"></video><figcaption>Versão 1 · locução em off. <a href="https://www.youtube.com/watch?v=XOyI6dT6ioQ" target="_blank" rel="noopener">Publicada no YouTube</a>.</figcaption></figure>
+    <figure><video src="assets/promo-lipsync.mp4" poster="assets/poster.jpg" controls playsinline preload="none"></video><figcaption>Versão 2 · lipsync do Kling nas cenas de frente (+10 créditos).</figcaption></figure>
+  </div>
+  <div class="ex" style="grid-template-columns:1fr;margin-top:18px">
+    <figure><img src="assets/kling-bruto.jpg" alt="Oito quadros do vídeo bruto do Kling" loading="lazy"><figcaption>O que o Kling entregou: celular com a tela do INEMA.CLUB (0–4,6 s), notebook (4,6–9,9 s) e aceno (9,9–15 s). Ele até manteve legível o menu do celular.</figcaption></figure>
+    <figure><img src="assets/montagem.jpg" alt="Oito quadros do vídeo montado com os textos" loading="lazy"><figcaption>Depois da montagem: o gancho no quadro 0, os quatro itens entrando quando são falados, a frase de valor e o fecho INEMA.CLUB.</figcaption></figure>
+    <figure><img src="assets/lipsync-boca.jpg" alt="Recortes do rosto mostrando a boca se movendo" loading="lazy"><figcaption>Conferência do lipsync: a boca abre e fecha ao longo da fala nas cenas 1 e 3.</figcaption></figure>
+  </div>
+</div></section>
+
+<section id="roadmap"><div class="wrap">
+  <span class="chip">Próximos passos</span>
+  <h2>O que dá para melhorar</h2>
+  <p class="sub">Ideias que ficaram de fora desta primeira produção.</p>
+  <div class="phase"><div class="tag">Feito</div><div class="d"><strong>Promo de 15 s, duas versões</strong><span>Cenas no Kling, voz ElevenLabs, textos, lipsync, Short publicado.</span></div></div>
+  <div class="phase"><div class="tag">Próximo</div><div class="d"><strong>Perguntar "a pessoa fala?" no plano</strong><span>Evita refazer o vídeo para pôr lipsync depois.</span></div></div>
+  <div class="phase"><div class="tag">Ideia</div><div class="d"><strong>Lote de variações</strong><span>Mesmo roteiro com outras pessoas, cenários e vozes, para testar qual prende mais.</span></div></div>
+  <div class="phase"><div class="tag">Ideia</div><div class="d"><strong>Lipsync em lote, sem clique manual</strong><span>Os scripts já enviam e baixam; falta encadear tudo num comando só.</span></div></div>
+</div></section>
+
+<footer>
+  <div class="wrap">
+    <div class="pill">Kling AI</div><div class="pill">ElevenLabs</div><div class="pill">ffmpeg</div><div class="pill">Pillow</div><div class="pill">Playwright</div><div class="pill">Claude Code</div>
+    <p style="margin-top:18px">UGC com agente · caso real do promo INEMA.CLUB ·
+      <a href="https://github.com/inematds/ugc-agente">inematds/ugc-agente</a> ·
+      <a href="https://inema.club">INEMA.CLUB</a></p>
+  </div>
+</footer>
+
+<script>
+  (function(){
+    var KEY='ugc-agente-theme';
+    var b=document.body, t=document.getElementById('themeToggle');
+    if(localStorage.getItem(KEY)==='light'){ b.classList.add('light'); t.textContent='☀️'; }
+    t.addEventListener('click',function(){
+      var light=b.classList.toggle('light');
+      t.textContent=light?'☀️':'🌙';
+      localStorage.setItem(KEY, light?'light':'dark');
+    });
+  })();
+</script>
+</body>
+</html>
